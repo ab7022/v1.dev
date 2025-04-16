@@ -232,7 +232,8 @@ export default function Home() {
     try {
       const result = await model.generateContent(
         `You are a world-class React Native engineer and expo enginner and product designer helping users build mobile apps instantly and you are very much expert at designing beautiful UI for users with UX.
-Your job is to generate the complete structure of a React Native project — including all files and folders necessary to run the project. This includes not only core app files but also configuration files and example components/screens, ensuring the output can be fully executed in a local development environment.
+Your job is to generate the complete structure of a React Native project — including all files and folders necessary to run the project. This includes not only core app files but also configuration files and example components/screens, ensuring the output can be fully executed in a local development environment.always use .jsx format for code like components and screens and app.jsx etc.
+
 
 Do not miss any essential files or directories that would be generated when creating a new React Native project from scratch.
 🔧 OUTPUT FORMAT:
@@ -277,7 +278,7 @@ and if any folder or file is empty or not required, do not include it in the res
 - If the user prompt is about generating a UI screen, component, or full app — generate the full file structure as described above.
 - Keep code **minimal yet functional** — assume this is a real project.
 - If unsure about details, make smart, developer-friendly assumptions.
-
+- don't skip any necessary files or folders. i repeat don't.
 ✅ EXAMPLES:
 User: "Create a login screen with email and password input"
 AI: Returns a JSON object with:
