@@ -1,6 +1,6 @@
 // SnackPreview.tsx
 import React, { useEffect, useState } from "react";
-import { Snack } from "snack-sdk";
+import { Snack, createRuntimeUrl } from "snack-sdk";
 
 export default function SnackPreview({
   aiOutput,
@@ -10,8 +10,6 @@ export default function SnackPreview({
   dependencies: any;
 }) {
   const [snackUrl, setSnackUrl] = useState("");
-  console.log("dependencies2", dependencies); // Debugging line to check the dependencies
-  // console.log("AI Output:", aiOutput); // Debugging line to check the AI output
   useEffect(() => {
     const generateSnack = async () => {
       try {
@@ -29,47 +27,58 @@ export default function SnackPreview({
           },
           {}
         );
-        function cleanDependencies(
-          deps: Record<string, any>
-        ): Record<string, string> {
-          const fixed: Record<string, string> = {};
-
+        function transformDependencies(deps) {
+          const transformed = {};
           for (const [pkg, version] of Object.entries(deps)) {
-            if (typeof version === "string") {
-              fixed[pkg] = version;
-            } else if (typeof version === "object") {
-              // Rebuild version string from indexed object like { 0: '^', 1: '6', 2: '.', ... }
-              fixed[pkg] = Object.keys(version)
-                .filter((k) => !isNaN(Number(k)))
-                .sort((a, b) => Number(a) - Number(b))
-                .map((k) => version[k])
-                .join("")
-                .trim();
-            } else {
-              fixed[pkg] = String(version);
-            }
+            transformed[pkg] = { version };
           }
-
-          return fixed;
+          return { dependencies: transformed };
         }
-        const cleanedDeps = cleanDependencies(dependencies);
-        console.log("Cleaned Dependencies", cleanedDeps);
         
+        const cleanedDeps = transformDependencies(dependencies);        
         const snack = new Snack({
           name: "AI Generated Preview",
           description: "Preview from AI-generated code",
           files: snackFiles,
           sdkVersion: "52.0.0",
-          //@ts-ignore
-          dependencies:cleanedDeps, // Use the cleaned dependencies
+           dependencies : transformDependencies(dependencies).dependencies,
+            // apiURL: "https://snack.expo.dev/api/v2",
         });
-        snack.setOnline(true);
-        // snack.setUser({ sessionSecret: "sessionSecret" }); // Set user info if needed
+        
+        // const snack = new Snack({
+        //   name: "AI Generated Preview",
+        //   description: "Preview from AI-generated code",
+        //   sdkVersion: "52.0.0",
+        //   dependencies: {
+        //     'expo-linear-gradient': {
+        //       version: '14.0.2'
+        //     },
+           
 
+        //   },
+
+        //   // dependencies: dependencies,
+        //   files: {
+        //     'App.js': {
+        //       type: 'CODE',
+        //       contents: `
+        // import * as React from 'react';
+        // import { LinearGradient } from 'expo-linear-gradient';
+        
+        // export default () => (
+        //   <LinearGradient style={{flex: 1}} colors={['red', 'white', 'blue']} />
+        // );
+        // `
+        //     }
+        //   }
+        // });
+        console.log("Snack Object", snack); 
+        snack.setDeviceId("web"); 
+        snack.setUser({sessionSecret:"Secret"})
+        snack.setOnline(true);      
         const { url } = await snack.getStateAsync();
         setSnackUrl(url);
-        console.log("Snack State Dependendies", snack.getState()); // Debugging line to check the generated Snack URL
-        console.log("Snack URL:", url); // Debugging line to check the generated Snack URL
+        console.log("Snack URL:", url); 
       } catch (error) {
         console.error("Error generating Snack preview:", error);
       }
