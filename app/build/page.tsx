@@ -760,7 +760,7 @@ const handleSubmit = async () => {
             {msg.content}
           </div>
           {msg.role === "user" && (
-            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-slate-600 flex items-center justify-center">
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-slate-600 flex items-center justifychat his-center">
               <User className="h-4 w-4 text-white" />
             </div>
           )}
