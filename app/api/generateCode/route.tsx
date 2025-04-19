@@ -1,54 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  GoogleGenerativeAI,
-  HarmBlockThreshold,
-  HarmCategory,
-} from "@google/generative-ai";
+import OpenAI from "openai";
 
-const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+// Server-only environment variable check
+const openai = new OpenAI({
+  baseURL: "https://api.deepseek.com/",
+  apiKey: process.env.OPENAI_API_KEY, // Must be set in server env
+});
 
-export async function POST(req: NextRequest) {
-  try {
-    // Validate request
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key not configured" },
-        { status: 500 }
-      );
-    }
-
-    const body = await req.json();
-
-    if (!body?.prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 }
-      );
-    }
-
-    // Initialize Google Generative AI
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    // Configure safety settings
-    const safetySettings = [
-      {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-      },
-    ];
-
-    // Get the generative model
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-2.0-flash" },
-       
-    );
-
-    // Construct the prompt
-    const prompt = `You are a world-class React Native engineer, expert in Expo SDK 52.0.0, and a premium UI/UX product designer. You help developers generate complete, modular, production-quality React Native apps instantly.
+const SYSTEM_PROMPT = `You are a world-class React Native engineer, expert in Expo SDK 52.0.0, and a premium UI/UX product designer. You help developers generate complete, modular, production-quality React Native apps instantly.
 
 🎯 YOUR JOB:
 Generate a fully runnable **Expo SDK 52 project** using **JavaScript**, with the following qualities:
@@ -104,29 +63,51 @@ Respond with a **valid JSON** object in this format:
 💡 BEHAVIOR:
 - If prompt is a general question, respond in plain text
 - If prompt is UI or app-related, generate the full file structure as above
-- Code should be clean, modern, minimal, and functional
+- Code should be clean, modern, minimal, and functional`;
 
-User prompt: ${body.prompt}`;
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { prompt, incomingMessages = [] } = body;
 
-    // Generate content
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Parse the response if it's JSON
-    try {
-      const jsonResponse = JSON.parse(text);
-      return NextResponse.json(jsonResponse);
-    } catch (e) {
-      // If not JSON, return as text
-      return NextResponse.json({ text });
+    if (!prompt || typeof prompt !== "string") {
+      return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
     }
 
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...incomingMessages,
+      { role: "user", content: prompt },
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: "deepseek-chat",
+      messages,
+      max_tokens: 8000,
+      temperature: 0.1,
+    });
+
+    const assistantMessage = completion.choices[0].message;
+
+    const text = assistantMessage.content || "";
+
+    // Try to parse JSON (if response is JSON-formatted code generation)
+    try {
+      const jsonResponse = JSON.parse(text);
+      return NextResponse.json({
+        assistant: assistantMessage,
+        messages: [...incomingMessages, { role: "user", content: prompt }, assistantMessage],
+        data: jsonResponse,
+      });
+    } catch (err) {
+      return NextResponse.json({
+        assistant: assistantMessage,
+        messages: [...incomingMessages, { role: "user", content: prompt }, assistantMessage],
+        text, // Plain text fallback
+      });
+    }
   } catch (error) {
-    console.error("Error in generating content:", error);
-    return NextResponse.json(
-      { error: "An error occurred while processing your request." },
-      { status: 500 }
-    );
+    console.error("Error generating response:", error);
+    return NextResponse.json({ error: "Server error occurred." }, { status: 500 });
   }
 }

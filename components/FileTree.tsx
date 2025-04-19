@@ -1,7 +1,8 @@
-import { FileText, Folder, ChevronRight, ChevronDown } from "lucide-react";
+"use client";
+import { FileText, Folder, ChevronRight, ChevronDown, FileCode, Copy, Expand } from "lucide-react";
 import { useState, useEffect } from "react";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
+import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface FileTreeProps {
   tree: Record<string, any>;
@@ -41,48 +42,76 @@ export const FileTree = ({ tree, onSelect, selected }: FileTreeProps) => {
           const currentPath = path ? `${path}/${key}` : key;
           if (typeof value === "string") {
             return (
-              <li
+              <motion.li
                 key={value}
+                whileHover={{ scale: 1.01 }}
                 onClick={() => onSelect(value)}
-                className={`cursor-pointer pl-3 py-2 rounded-md flex items-center gap-2 transition-all duration-200 
+                className={`cursor-pointer pl-6 pr-2 py-1.5 rounded flex items-center gap-2 text-sm transition-colors
                   ${
                     selected === value
-                      ? "bg-gray-800/80 text-blue-300 shadow-lg border-l-2 border-cyan-400"
-                      : "bg-transparent hover:bg-gray-800/50 hover:border-l hover:border-cyan-500/50"
+                      ? "bg-blue-900/20 text-blue-400"
+                      : "hover:bg-slate-800 text-slate-300"
                   }`}
               >
                 <FileText 
                   size={14} 
-                  className={`flex-shrink-0 ${selected === value ? "text-cyan-400" : "text-blue-500/70"}`} 
+                  className={`flex-shrink-0 ${
+                    selected === value 
+                      ? "text-blue-400" 
+                      : "text-slate-400"
+                  }`} 
                 />
-                <span className="truncate text-sm">{key}</span>
-              </li>
+                <span className="truncate">
+                  {key}
+                </span>
+              </motion.li>
             );
           } else {
             const isExpanded = expandedFolders[currentPath];
             return (
-              <li key={currentPath} className="mb-1">
+              <motion.li 
+                key={currentPath} 
+                className="mb-1"
+                whileHover={{ scale: 1.01 }}
+              >
                 <div
                   onClick={() => toggleFolder(currentPath)}
-                  className="flex items-center gap-2 py-2 pl-3 rounded-md cursor-pointer text-gray-300 
-                    hover:bg-gray-800/30 hover:text-white transition-all duration-200 
-                    backdrop-blur-sm"
+                  className={`flex items-center gap-2 py-1.5 pl-3 pr-2 rounded cursor-pointer text-sm transition-colors
+                    ${
+                      isExpanded
+                        ? "bg-slate-800 text-blue-400"
+                        : "hover:bg-slate-800 text-slate-300"
+                    }`}
                 >
-                  <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gray-800/70">
-                    {isExpanded ? 
-                      <ChevronDown size={10} className="text-cyan-400" /> : 
-                      <ChevronRight size={10} className="text-cyan-400" />
-                    }
-                  </div>
-                  <Folder size={14} className="text-indigo-400" />
-                  <span className="text-sm font-medium">{key}</span>
+                  <motion.div 
+                    animate={{ rotate: isExpanded ? 90 : 0 }}
+                    className="flex items-center justify-center w-5 h-5"
+                  >
+                    <ChevronRight size={14} className="text-slate-400" />
+                  </motion.div>
+                  <Folder 
+                    size={14} 
+                    className={`${
+                      isExpanded 
+                        ? "text-blue-400" 
+                        : "text-slate-400"
+                    }`} 
+                  />
+                  <span className="truncate">{key}</span>
                 </div>
-                {isExpanded && (
-                  <div className="ml-4 pl-2 border-l border-indigo-900/50">
-                    {renderTree(value, currentPath)}
-                  </div>
-                )}
-              </li>
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="ml-6 pl-2 border-l border-slate-700"
+                    >
+                      {renderTree(value, currentPath)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.li>
             );
           }
         })}
@@ -91,11 +120,14 @@ export const FileTree = ({ tree, onSelect, selected }: FileTreeProps) => {
   };
 
   return (
-    <div className="p-3 rounded-lg bg-gray-900/90 backdrop-blur-md border border-gray-800 shadow-xl">
-      <div className="mb-3 px-2 pb-2 border-b border-gray-800">
-        <h3 className="text-sm font-medium text-gray-200 flex items-center gap-2">
-          <Folder size={14} className="text-indigo-400" />
+    <div className="p-2">
+      <div className="mb-2 px-2">
+        <h3 className="text-sm font-medium text-white flex items-center gap-2">
+          <Folder size={16} className="text-blue-400" />
           <span>Project Files</span>
+          <Badge className="ml-auto bg-slate-800 text-slate-300 border-slate-700 text-xs">
+            {Object.keys(tree).length} items
+          </Badge>
         </h3>
       </div>
       {renderTree(tree)}

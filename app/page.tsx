@@ -1,41 +1,54 @@
-"use client"
+"use client";
 
-import { useEffect, useRef } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { motion, useMotionValue, useScroll, useTransform } from "framer-motion"
-import { ArrowRight, Download, Zap, Smartphone, Sparkles, Code, Star, Users, MessageSquare, CheckCircle, Clock, Heart } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useMobile } from "@/hooks/use-mobile"
-import { ParticleBackground } from "@/components/particle-background"
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { motion, useMotionValue, useScroll, useTransform } from "framer-motion";
+import {
+  ArrowRight,
+  Download,
+  Zap,
+  Smartphone,
+  Sparkles,
+  Code,
+  Star,
+  Users,
+  MessageSquare,
+  CheckCircle,
+  Clock,
+  Heart,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useMobile } from "@/hooks/use-mobile";
+import { ParticleBackground } from "@/components/particle-background";
 // import { DeviceMockup } from "@/components/device-mockup"
 // import { VideoDemo } from "@/components/video-demo"
 // import { IntegrationLogos } from "@/components/integration-logos"
-import { DeviceMockup } from "@/components/device-mockup"
-import { VideoDemo }from "@/components/video-demo"
-import { IntegrationLogos } from "@/components/integration-logos"
+import { DeviceMockup } from "@/components/device-mockup";
+import { VideoDemo } from "@/components/video-demo";
+import { IntegrationLogos } from "@/components/integration-logos";
 export default function LandingPage() {
-  const isMobile = useMobile()
-  const heroRef = useRef<HTMLDivElement>(null)
-  const featuresRef = useRef<HTMLDivElement>(null)
-  const workflowRef = useRef<HTMLDivElement>(null)
-  const showcaseRef = useRef<HTMLDivElement>(null)
-  const pricingRef = useRef<HTMLDivElement>(null)
-  const testimonialsRef = useRef<HTMLDivElement>(null)
-  const faqRef = useRef<HTMLDivElement>(null)
+  const isMobile = useMobile();
+  const heroRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const workflowRef = useRef<HTMLDivElement>(null);
+  const showcaseRef = useRef<HTMLDivElement>(null);
+  const pricingRef = useRef<HTMLDivElement>(null);
+  const testimonialsRef = useRef<HTMLDivElement>(null);
+  const faqRef = useRef<HTMLDivElement>(null);
 
-  const { scrollY } = useScroll()
-  const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.9])
-  const lastScrollY = useRef(0)
-  const headerY = useMotionValue(0)
+  const { scrollY } = useScroll();
+  const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.9]);
+  const lastScrollY = useRef(0);
+  const headerY = useMotionValue(0);
 
   useEffect(() => {
-    return scrollY.on('change', (y) => {
-      const isScrollingDown = y > lastScrollY.current
-      headerY.set(isScrollingDown ? -80 : 0) // Adjust -80 to your header height
-      lastScrollY.current = y
-    })
-  }, [])
+    return scrollY.on("change", (y) => {
+      const isScrollingDown = y > lastScrollY.current;
+      headerY.set(isScrollingDown ? -80 : 0); // Adjust -80 to your header height
+      lastScrollY.current = y;
+    });
+  }, []);
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-black text-white">
       {/* Background gradient */}
@@ -53,12 +66,14 @@ export default function LandingPage() {
 
       {/* Header */}
       <motion.header
-      style={{
-        y: headerY,
-        opacity: headerOpacity,
-      }}
-      className="fixed top-0 left-0 right-0 z-50 h-20 bg-gradient-to-r opacity-90   backdrop-blur-2xl  transition-all duration-500"
-    >        <div className="container flex h-20 items-center justify-between">
+        style={{
+          y: headerY,
+          opacity: headerOpacity,
+        }}
+        className="fixed top-0 left-20 right-20 z-50 h-20 bg-gradient-to-r opacity-90   backdrop-blur-2xl  transition-all duration-500"
+      >
+        {" "}
+        <div className="container flex h-20 items-center justify-between">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,7 +87,14 @@ export default function LandingPage() {
             <span className="text-2xl font-bold tracking-tight">AppCraft</span>
           </motion.div>
           <nav className="hidden md:flex items-center gap-8">
-            {["Features", "Workflow", "Showcase", "Pricing", "Testimonials", "FAQ"].map((item, i) => (
+            {[
+              "Features",
+              "Workflow",
+              "Showcase",
+              "Pricing",
+              "Testimonials",
+              "FAQ",
+            ].map((item, i) => (
               <motion.div
                 key={item}
                 initial={{ opacity: 0, y: -20 }}
@@ -112,9 +134,12 @@ export default function LandingPage() {
         </div>
       </motion.header>
 
-      <main className="relative z-10 flex-1">
+      <main className="relative z-10 flex-1 ">
         {/* Hero Section */}
-        <section ref={heroRef} className="relative overflow-hidden py-20 md:py-32">
+        <section
+          ref={heroRef}
+          className="relative overflow-hidden py-20 md:py-32 mx-10"
+        >
           <div className="container px-4 md:px-6">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
               <motion.div
@@ -148,8 +173,9 @@ export default function LandingPage() {
                   transition={{ duration: 0.8, delay: 0.4 }}
                   className="max-w-[600px] text-gray-400 md:text-xl/relaxed"
                 >
-                  Create, preview, and download production-ready mobile apps in minutes, not months. The most advanced
-                  app builder for technical and non-technical users.
+                  Create, preview, and download production-ready mobile apps in
+                  minutes, not months. The most advanced app builder for
+                  technical and non-technical users.
                 </motion.p>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -158,10 +184,10 @@ export default function LandingPage() {
                   className="flex flex-col sm:flex-row gap-4"
                 >
                   <Link
-                    href="#pricing"
+                    href="/build"
                     className="rounded-full bg-gradient-to-r from-rose-500 to-purple-600 px-8 py-3 text-sm font-medium text-white transition-transform hover:scale-105 flex items-center justify-center"
                   >
-                    Get Premium Access
+                    Start Building my app
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                   <Link
@@ -292,7 +318,7 @@ export default function LandingPage() {
         </section>
 
         {/* Stats Section */}
-        <section className="relative py-12">
+        <section className="relative py-12 mx-10">
           <div className="container px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -302,10 +328,26 @@ export default function LandingPage() {
               className="grid grid-cols-2 gap-4 md:grid-cols-4"
             >
               {[
-                { value: "10k+", label: "Users", icon: <Users className="h-6 w-6 text-rose-400" /> },
-                { value: "500+", label: "Apps Built", icon: <Smartphone className="h-6 w-6 text-purple-400" /> },
-                { value: "99.9%", label: "Uptime", icon: <Clock className="h-6 w-6 text-rose-400" /> },
-                { value: "4.9/5", label: "Rating", icon: <Star className="h-6 w-6 text-purple-400" /> },
+                {
+                  value: "10k+",
+                  label: "Users",
+                  icon: <Users className="h-6 w-6 text-rose-400" />,
+                },
+                {
+                  value: "500+",
+                  label: "Apps Built",
+                  icon: <Smartphone className="h-6 w-6 text-purple-400" />,
+                },
+                {
+                  value: "99.9%",
+                  label: "Uptime",
+                  icon: <Clock className="h-6 w-6 text-rose-400" />,
+                },
+                {
+                  value: "4.9/5",
+                  label: "Rating",
+                  icon: <Star className="h-6 w-6 text-purple-400" />,
+                },
               ].map((stat, i) => (
                 <motion.div
                   key={i}
@@ -329,7 +371,7 @@ export default function LandingPage() {
         </section>
 
         {/* Video Demo Section */}
-        <section id="demo" className="relative py-20">
+        <section id="demo" className="relative py-20 mx-10">
           <div className="container px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -360,17 +402,21 @@ export default function LandingPage() {
                 </span>
               </motion.h2>
             </motion.div>
-            
-            <VideoDemo 
-              videoSrc="/api/placeholder/1920/1080" 
-              posterSrc="/api/placeholder/1920/1080" 
+
+            <VideoDemo
+              videoSrc="/api/placeholder/1920/1080"
+              posterSrc="/api/placeholder/1920/1080"
               title="AppCraft Demo: Build Your First App in 5 Minutes"
             />
           </div>
         </section>
 
         {/* Features Section */}
-        <section id="features" ref={featuresRef} className="relative py-20 md:py-32">
+        <section
+          id="features"
+          ref={featuresRef}
+          className="relative py-20 md:py-32 mx-10"
+        >
           <div className="container px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -407,8 +453,9 @@ export default function LandingPage() {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="max-w-[900px] text-gray-400 md:text-xl/relaxed"
               >
-                Our premium platform gives you all the tools to create production-ready mobile apps without writing a
-                single line of code.
+                Our premium platform gives you all the tools to create
+                production-ready mobile apps without writing a single line of
+                code.
               </motion.p>
             </motion.div>
 
@@ -417,37 +464,43 @@ export default function LandingPage() {
                 {
                   icon: <Smartphone className="h-10 w-10 text-rose-400" />,
                   title: "Real-Time Preview",
-                  description: "See your changes instantly with our live preview feature on virtual devices.",
+                  description:
+                    "See your changes instantly with our live preview feature on virtual devices.",
                   delay: 0.1,
                 },
                 {
                   icon: <Download className="h-10 w-10 text-purple-400" />,
                   title: "Local Downloads",
-                  description: "Download your app locally and test it on real devices with one click.",
+                  description:
+                    "Download your app locally and test it on real devices with one click.",
                   delay: 0.3,
                 },
                 {
                   icon: <Zap className="h-10 w-10 text-rose-400" />,
                   title: "Rapid MVP Creation",
-                  description: "Build and launch your MVP in days instead of months with our streamlined workflow.",
+                  description:
+                    "Build and launch your MVP in days instead of months with our streamlined workflow.",
                   delay: 0.5,
                 },
                 {
                   icon: <Code className="h-10 w-10 text-purple-400" />,
                   title: "Export Clean Code",
-                  description: "Export your app to React Native code that's maintainable and production-ready.",
+                  description:
+                    "Export your app to React Native code that's maintainable and production-ready.",
                   delay: 0.6,
                 },
                 {
                   icon: <CheckCircle className="h-10 w-10 text-rose-400" />,
                   title: "Component Library",
-                  description: "Access 200+ pre-built UI components designed for mobile experiences.",
+                  description:
+                    "Access 200+ pre-built UI components designed for mobile experiences.",
                   delay: 0.7,
                 },
                 {
                   icon: <Heart className="h-10 w-10 text-purple-400" />,
                   title: "AI Design Assistance",
-                  description: "Get smart design suggestions powered by our built-in AI assistant.",
+                  description:
+                    "Get smart design suggestions powered by our built-in AI assistant.",
                   delay: 0.8,
                 },
               ].map((feature, i) => (
@@ -475,7 +528,7 @@ export default function LandingPage() {
         </section>
 
         {/* Device Mockups Section */}
-        <section className="relative py-20">
+        <section className="relative py-20 mx-10">
           <div className="container px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -497,20 +550,20 @@ export default function LandingPage() {
                 </span>
               </motion.h2>
             </motion.div>
-            
+
             <div className="grid md:grid-cols-3 gap-8 items-center">
-              <DeviceMockup 
-                image="/api/placeholder/540/960" 
+              <DeviceMockup
+                image="/api/placeholder/540/960"
                 alt="Social Media App"
                 type="phone"
               />
-              <DeviceMockup 
-                image="/api/placeholder/540/960" 
+              <DeviceMockup
+                image="/api/placeholder/540/960"
                 alt="E-commerce App"
                 type="phone"
               />
-              <DeviceMockup 
-                image="/api/placeholder/540/960" 
+              <DeviceMockup
+                image="/api/placeholder/540/960"
                 alt="Fitness Tracker App"
                 type="phone"
               />
@@ -519,7 +572,11 @@ export default function LandingPage() {
         </section>
 
         {/* Workflow Section */}
-        <section id="workflow" ref={workflowRef} className="relative py-20 md:py-32">
+        <section
+          id="workflow"
+          ref={workflowRef}
+          className="relative py-20 md:py-32 "
+        >
           <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900/50 to-black" />
           <div className="container relative px-4 md:px-6">
             <motion.div
@@ -562,21 +619,24 @@ export default function LandingPage() {
                   {
                     number: "1",
                     title: "Design Your App",
-                    description: "Use our intuitive drag-and-drop interface to design your app's UI.",
+                    description:
+                      "Use our intuitive drag-and-drop interface to design your app's UI.",
                     image: "/api/placeholder/800/600",
                     delay: 0.1,
                   },
                   {
                     number: "2",
                     title: "Connect Your Data",
-                    description: "Integrate with APIs and databases without writing complex code.",
+                    description:
+                      "Integrate with APIs and databases without writing complex code.",
                     image: "/api/placeholder/800/600",
                     delay: 0.3,
                   },
                   {
                     number: "3",
                     title: "Publish & Share",
-                    description: "Download your app or publish directly to app stores with our guided process.",
+                    description:
+                      "Download your app or publish directly to app stores with our guided process.",
                     image: "/api/placeholder/800/600",
                     delay: 0.5,
                   },
@@ -616,10 +676,12 @@ export default function LandingPage() {
                           alt={step.title}
                           className="aspect-video object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-6 text-left">
                           <h3 className="text-xl font-bold">{step.title}</h3>
-                          <p className="mt-2 text-gray-400">{step.description}</p>
+                          <p className="mt-2 text-gray-400">
+                            {step.description}
+                          </p>
                         </div>
                       </div>
                     </motion.div>
@@ -631,7 +693,7 @@ export default function LandingPage() {
         </section>
 
         {/* Integration Logos Section */}
-        <section className="relative py-16">
+        <section className="relative py-16 mx-10">
           <div className="container px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -650,8 +712,8 @@ export default function LandingPage() {
                 Seamlessly Integrates With Your Favorite Tools
               </motion.h2>
             </motion.div>
-            
-            <IntegrationLogos 
+
+            <IntegrationLogos
               logos={[
                 { name: "Firebase", image: "/api/placeholder/160/80" },
                 { name: "Stripe", image: "/api/placeholder/160/80" },
@@ -665,7 +727,11 @@ export default function LandingPage() {
         </section>
 
         {/* Showcase Section */}
-        <section id="showcase" ref={showcaseRef} className="relative py-20 md:py-32">
+        <section
+          id="showcase"
+          ref={showcaseRef}
+          className="relative py-20 md:py-32 mx-10"
+        >
           <div className="container px-4 md:px-6">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
               <motion.div
@@ -703,8 +769,9 @@ export default function LandingPage() {
                   transition={{ duration: 0.8, delay: 0.4 }}
                   className="max-w-[600px] text-gray-400 md:text-xl/relaxed"
                 >
-                  From startups to enterprises, our customers have built incredible apps that are now used by millions.
-                  See how they did it with AppCraft's no-code platform.
+                  From startups to enterprises, our customers have built
+                  incredible apps that are now used by millions. See how they
+                  did it with AppCraft's no-code platform.
                 </motion.p>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -722,7 +789,7 @@ export default function LandingPage() {
                   </Link>
                 </motion.div>
               </motion.div>
-              
+
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -731,32 +798,50 @@ export default function LandingPage() {
                 className="grid grid-cols-2 gap-4"
               >
                 {[
-                  { name: "FitLife", image: "/api/placeholder/540/960", category: "Health & Fitness" },
-                  { name: "ShopEase", image: "/api/placeholder/540/960", category: "E-commerce" },
-                  { name: "MindfulMe", image: "/api/placeholder/540/960", category: "Wellness" },
-                  { name: "TaskMaster", image: "/api/placeholder/540/960", category: "Productivity" },
+                  {
+                    name: "FitLife",
+                    image: "/api/placeholder/540/960",
+                    category: "Health & Fitness",
+                  },
+                  {
+                    name: "ShopEase",
+                    image: "/api/placeholder/540/960",
+                    category: "E-commerce",
+                  },
+                  {
+                    name: "MindfulMe",
+                    image: "/api/placeholder/540/960",
+                    category: "Wellness",
+                  },
+                  {
+                    name: "TaskMaster",
+                    image: "/api/placeholder/540/960",
+                    category: "Productivity",
+                  },
                 ].map((app, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.2 + (i * 0.1) }}
+                    transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
                     className="group relative overflow-hidden rounded-xl border border-gray-800 bg-black"
                   >
                     <div className="aspect-[9/16] overflow-hidden">
-                      <Image 
-                        src={app.image} 
-                        width={540} 
-                        height={960} 
-                        alt={app.name} 
+                      <Image
+                        src={app.image}
+                        width={540}
+                        height={960}
+                        alt={app.name}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                     <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                       <div className="text-lg font-bold">{app.name}</div>
-                      <div className="text-sm text-rose-300">{app.category}</div>
+                      <div className="text-sm text-rose-300">
+                        {app.category}
+                      </div>
                     </div>
                   </motion.div>
                 ))}
@@ -766,9 +851,13 @@ export default function LandingPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section id="testimonials" ref={testimonialsRef} className="relative py-20 md:py-32">
+        <section
+          id="testimonials"
+          ref={testimonialsRef}
+          className="relative py-20 md:py-32 "
+        >
           <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900/50 to-black" />
-          <div className="container relative px-4 md:px-6">
+          <div className="container relative px-4 md:px-6 ">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -805,42 +894,48 @@ export default function LandingPage() {
                   name: "Alex Johnson",
                   role: "Startup Founder",
                   image: "/api/placeholder/100/100",
-                  quote: "AppCraft saved us months of development time. We launched our MVP in just 2 weeks and secured our first round of funding!",
+                  quote:
+                    "AppCraft saved us months of development time. We launched our MVP in just 2 weeks and secured our first round of funding!",
                   delay: 0.1,
                 },
                 {
                   name: "Sarah Chen",
                   role: "Product Manager",
                   image: "/api/placeholder/100/100",
-                  quote: "I'm not a coder, but I was able to build our company's internal tool in days. The customer support is also incredible.",
+                  quote:
+                    "I'm not a coder, but I was able to build our company's internal tool in days. The customer support is also incredible.",
                   delay: 0.2,
                 },
                 {
                   name: "Michael Rodriguez",
                   role: "React Developer",
                   image: "/api/placeholder/100/100",
-                  quote: "Even as a developer, I use AppCraft for rapid prototyping. The code export feature is clean and well-structured.",
+                  quote:
+                    "Even as a developer, I use AppCraft for rapid prototyping. The code export feature is clean and well-structured.",
                   delay: 0.3,
                 },
                 {
                   name: "Emily Watson",
                   role: "Digital Marketer",
                   image: "/api/placeholder/100/100",
-                  quote: "We've built three different apps for our marketing campaigns. Each one took less than a week from concept to deployment.",
+                  quote:
+                    "We've built three different apps for our marketing campaigns. Each one took less than a week from concept to deployment.",
                   delay: 0.4,
                 },
                 {
                   name: "David Park",
                   role: "CTO",
                   image: "/api/placeholder/100/100",
-                  quote: "AppCraft is now our go-to solution for client projects. We deliver apps 70% faster while maintaining high quality.",
+                  quote:
+                    "AppCraft is now our go-to solution for client projects. We deliver apps 70% faster while maintaining high quality.",
                   delay: 0.5,
                 },
                 {
                   name: "Sophia Williams",
                   role: "UI/UX Designer",
                   image: "/api/placeholder/100/100",
-                  quote: "The component library is extensive and customizable. As a designer, I appreciate how faithfully my designs are translated.",
+                  quote:
+                    "The component library is extensive and customizable. As a designer, I appreciate how faithfully my designs are translated.",
                   delay: 0.6,
                 },
               ].map((testimonial, i) => (
@@ -864,7 +959,9 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <div className="font-medium">{testimonial.name}</div>
-                      <div className="text-sm text-gray-400">{testimonial.role}</div>
+                      <div className="text-sm text-gray-400">
+                        {testimonial.role}
+                      </div>
                     </div>
                   </div>
                   <div className="relative">
@@ -876,7 +973,10 @@ export default function LandingPage() {
                       {Array(5)
                         .fill(null)
                         .map((_, i) => (
-                          <Star key={i} className="h-4 w-4 fill-rose-500 text-rose-500" />
+                          <Star
+                            key={i}
+                            className="h-4 w-4 fill-rose-500 text-rose-500"
+                          />
                         ))}
                     </div>
                   </div>
@@ -887,7 +987,11 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" ref={pricingRef} className="relative py-20 md:py-32">
+        <section
+          id="pricing"
+          ref={pricingRef}
+          className="relative py-20 md:py-32 mx-10"
+        >
           <div className="container px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -924,7 +1028,8 @@ export default function LandingPage() {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="max-w-[800px] text-gray-400 md:text-xl/relaxed"
               >
-                Start with our free plan or upgrade to unlock premium features. All plans include our core app building capabilities.
+                Start with our free plan or upgrade to unlock premium features.
+                All plans include our core app building capabilities.
               </motion.p>
             </motion.div>
 
@@ -995,7 +1100,9 @@ export default function LandingPage() {
                       ? "border-2 border-rose-500 bg-gradient-to-b from-rose-500/10 to-purple-600/10"
                       : "border border-gray-800 bg-gradient-to-b from-gray-900/50 to-black/50"
                   } p-8 backdrop-blur-sm transition-all duration-300 hover:shadow-lg ${
-                    plan.highlighted ? "hover:shadow-rose-500/20" : "hover:shadow-rose-500/5"
+                    plan.highlighted
+                      ? "hover:shadow-rose-500/20"
+                      : "hover:shadow-rose-500/5"
                   }`}
                 >
                   {plan.highlighted && (
@@ -1007,9 +1114,13 @@ export default function LandingPage() {
                     <h3 className="text-2xl font-bold">{plan.name}</h3>
                     <div className="mt-2 flex items-baseline justify-center">
                       <span className="text-4xl font-bold">{plan.price}</span>
-                      {plan.period && <span className="text-gray-400">{plan.period}</span>}
+                      {plan.period && (
+                        <span className="text-gray-400">{plan.period}</span>
+                      )}
                     </div>
-                    <p className="mt-2 text-sm text-gray-400">{plan.description}</p>
+                    <p className="mt-2 text-sm text-gray-400">
+                      {plan.description}
+                    </p>
                   </div>
                   <ul className="mb-8 flex-1 space-y-3">
                     {plan.features.map((feature, j) => (
@@ -1072,32 +1183,39 @@ export default function LandingPage() {
               {[
                 {
                   question: "Do I need coding experience to use AppCraft?",
-                  answer: "Not at all! AppCraft is designed for users of all technical backgrounds. Our drag-and-drop interface and intuitive tools make it easy for anyone to build mobile apps without writing a single line of code.",
+                  answer:
+                    "Not at all! AppCraft is designed for users of all technical backgrounds. Our drag-and-drop interface and intuitive tools make it easy for anyone to build mobile apps without writing a single line of code.",
                   delay: 0.1,
                 },
                 {
-                  question: "Can I publish apps to the App Store and Google Play?",
-                  answer: "Yes! AppCraft generates high-quality native code that meets the requirements for both the App Store and Google Play. We also provide step-by-step guides to help you through the submission process.",
+                  question:
+                    "Can I publish apps to the App Store and Google Play?",
+                  answer:
+                    "Yes! AppCraft generates high-quality native code that meets the requirements for both the App Store and Google Play. We also provide step-by-step guides to help you through the submission process.",
                   delay: 0.2,
                 },
                 {
                   question: "How does the app export process work?",
-                  answer: "With a simple click, you can export your app as a ready-to-install APK (Android) or IPA (iOS) file. For Pro and Enterprise users, we also provide the full source code in React Native format, which you can further customize or have your developers extend.",
+                  answer:
+                    "With a simple click, you can export your app as a ready-to-install APK (Android) or IPA (iOS) file. For Pro and Enterprise users, we also provide the full source code in React Native format, which you can further customize or have your developers extend.",
                   delay: 0.3,
                 },
                 {
                   question: "Is there a limit to how complex my app can be?",
-                  answer: "AppCraft supports a wide range of app complexities. From simple informational apps to sophisticated platforms with user authentication, database integrations, and real-time features, our platform scales with your needs.",
+                  answer:
+                    "AppCraft supports a wide range of app complexities. From simple informational apps to sophisticated platforms with user authentication, database integrations, and real-time features, our platform scales with your needs.",
                   delay: 0.4,
                 },
                 {
                   question: "Can I integrate with external APIs and services?",
-                  answer: "Absolutely! AppCraft provides a visual interface for connecting to REST APIs, GraphQL endpoints, and popular services like Firebase, Stripe, and AWS. No coding required for standard integrations.",
+                  answer:
+                    "Absolutely! AppCraft provides a visual interface for connecting to REST APIs, GraphQL endpoints, and popular services like Firebase, Stripe, and AWS. No coding required for standard integrations.",
                   delay: 0.5,
                 },
                 {
                   question: "What kind of support is available if I get stuck?",
-                  answer: "Free users have access to our community forum and documentation. Pro users receive priority email support with 24-hour response times. Enterprise customers enjoy dedicated support channels with phone assistance and personalized onboarding.",
+                  answer:
+                    "Free users have access to our community forum and documentation. Pro users receive priority email support with 24-hour response times. Enterprise customers enjoy dedicated support channels with phone assistance and personalized onboarding.",
                   delay: 0.6,
                 },
               ].map((faq, i) => (
@@ -1158,7 +1276,8 @@ export default function LandingPage() {
                     </span>
                   </h2>
                   <p className="text-gray-300 md:text-xl/relaxed">
-                    Start creating beautiful, functional mobile apps today. No coding required, no limitations.
+                    Start creating beautiful, functional mobile apps today. No
+                    coding required, no limitations.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 pt-4">
                     <Link
@@ -1180,7 +1299,7 @@ export default function LandingPage() {
                     <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-purple-600/10" />
                     <Image
                       src="/api/placeholder/480/960"
-                      width={480} 
+                      width={480}
                       height={960}
                       alt="Mobile App Preview"
                       className="h-full w-full object-cover"
@@ -1192,11 +1311,7 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-      </div>
-  )
-}
-      {/* Footer */}
-      {/* <footer className="relative z-10 border-t border-gray-800 bg-black py-12 text-gray-400">
+      <footer className="relative z-10 border-t border-gray-800 bg-black py-12 text-gray-400">
         <div className="container px-4 md:px-6">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-4">
@@ -1231,4 +1346,36 @@ export default function LandingPage() {
               <ul className="space-y-2">
                 {["Documentation", "Tutorials", "Blog", "Community", "Support"].map((item) => (
                   <li key={item}>
-                    <Link href={`# */}
+                    <Link href={`#${item.toLowerCase()}`} className="hover:text-rose-400">
+
+                      {item}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-white">Company</h3>
+              <ul className="space-y-2">
+                {["About Us", "Careers", "Privacy Policy", "Terms of Service"].map((item) => (
+                  <li key={item}>
+                    <Link href={`#${item.toLowerCase()}`} className="hover:text-rose-400">
+                      {item}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="mt-8 border-t border-gray-800 pt-6 text-center">
+            <p className="text-sm text-gray-500">© 2023 AppCraft. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  
+
+ 
+
+
+)}

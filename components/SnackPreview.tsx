@@ -1,5 +1,5 @@
 // SnackPreview.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Snack, createRuntimeUrl } from "snack-sdk";
 
 export default function SnackPreview({
@@ -10,6 +10,8 @@ export default function SnackPreview({
   dependencies: any;
 }) {
   const [snackUrl, setSnackUrl] = useState("");
+  const webPreviewRef = useRef<Window | null>(null);
+
   useEffect(() => {
     const generateSnack = async () => {
       try {
@@ -27,24 +29,25 @@ export default function SnackPreview({
           },
           {}
         );
-        function transformDependencies(deps) {
-          const transformed = {};
-          for (const [pkg, version] of Object.entries(deps)) {
-            transformed[pkg] = { version };
-          }
-          return { dependencies: transformed };
-        }
+    
         
-        const cleanedDeps = transformDependencies(dependencies);        
         const snack = new Snack({
           name: "AI Generated Preview",
           description: "Preview from AI-generated code",
           files: snackFiles,
           sdkVersion: "52.0.0",
            dependencies : transformDependencies(dependencies).dependencies,
+           webPreviewRef,      // ← Tells Snack to set up the web preview transport
+      online: true,
             // apiURL: "https://snack.expo.dev/api/v2",
         });
-        
+        const unsubscribe = snack.addStateListener((state) => {
+          if (state.webPreviewURL) {
+            setSnackUrl(state.webPreviewURL);
+          }
+        });
+    
+      
         // const snack = new Snack({
         //   name: "AI Generated Preview",
         //   description: "Preview from AI-generated code",
@@ -79,6 +82,11 @@ export default function SnackPreview({
         const { url } = await snack.getStateAsync();
         setSnackUrl(url);
         console.log("Snack URL:", url); 
+        console.log("Snack URL2:", snackUrl); // Debugging line
+        return () => {
+          unsubscribe.remove();
+          snack.setOnline(false);
+        };
       } catch (error) {
         console.error("Error generating Snack preview:", error);
       }
@@ -87,19 +95,30 @@ export default function SnackPreview({
     if (aiOutput) {
       generateSnack();
     }
-  }, [aiOutput]);
+  }, [aiOutput,dependencies]);
 
   return snackUrl ? (
-    <iframe
-      src={snackUrl}
-      style={{
-        width: "100%",
-        height: "600px",
-        border: "none",
-        borderRadius: 8,
-      }}
-    />
+    console.log("Snack URL:", snackUrl), // Debugging line
+    <iframe className="w-full h-full rounded-lg" 
+    ref={(el) => {
+      // Wire the iframe’s window into webPreviewRef
+      if (el) webPreviewRef.current = el.contentWindow;
+    }}
+    src={snackUrl}
+    style={{ width: "100%", height: "1000px", border: "none", borderRadius: 8,zIndex: 70, }}
+    allow="geolocation; camera; microphone"
+  />
+  
   ) : (
-    <p>Generating preview...</p>
+    <p >Generating preview...</p>
   );
+}
+
+
+function transformDependencies(deps) {
+  const transformed = {};
+  for (const [pkg, version] of Object.entries(deps)) {
+    transformed[pkg] = { version };
+  }
+  return { dependencies: transformed };
 }

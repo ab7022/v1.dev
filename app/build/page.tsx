@@ -2,53 +2,33 @@
 import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  FileText,
-  Code,
-  Eye,
-  MessageSquare,
-  Loader2,
-  Download,
-  Command,
-  Search,
-  ChevronRight,
-  Settings,
-  MoreVertical,
-  Zap,
-  ArrowRight,
-  Check,
-  Share2,
-  Save,
-  Package,
-  PlayCircle,
-  PlusCircle,
-  Menu,
-  X,
-  ChevronDown,
-  CloudLightning,
-  Smartphone,
-  Github
+import { 
+  FileText, Code, Eye, MessageSquare, Loader2, Download, 
+  Terminal, Search, ChevronRight, Settings, 
+  Zap, ArrowRight, Check, Github, Sparkles,
+  Folder, Edit, Save, Play, Command, Plus,
+  Copy, Star, BookOpen, PanelLeft, PanelRight,
+  RefreshCw, Phone, Layout, CodeIcon, Maximize2, Minimize2,
+  User
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import SnackPreview from "@/components/SnackPreview";
 import axios from "axios";
 import { buildTreeStructure, detectLanguage, extractJsonFromResponse } from "@/lib/fileUtils";
 import { FileTree } from "@/components/FileTree";
-import { CodeEditor } from "@/components/CodeEditor";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import Image from "next/image";
+import { CodeEditor } from "@/components/CodeEditor";
 
 export default function Home() {
-  const [prompt, setPrompt] = useState("");
+  // State declarations
+  const [prompt, setPrompt] = useState("create basic react native app");
   const [files, setFiles] = useState<Record<string, string>>({});
   const [selectedFile, setSelectedFile] = useState("");
   const [chatResponse, setChatResponse] = useState("");
@@ -61,33 +41,40 @@ export default function Home() {
   const [aiOutput, setAiOutput] = useState("");
   const [dependencies, setDependencies] = useState<Record<string, string>>({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
-  const [showTips, setShowTips] = useState(false);
-  const [currentTip, setCurrentTip] = useState(0);
+  const [showEditor, setShowEditor] = useState(false);
+  const [promptTemplate, setPromptTemplate] = useState("");
+  const [recentProjects, setRecentProjects] = useState([
+    { name: "Fitness Tracker", date: "2 days ago" },
+    { name: "E-commerce App", date: "1 week ago" },
+    { name: "Photo Gallery", date: "3 weeks ago" }
+  ]);
   const promptInputRef = useRef(null);
-  
-  const tips = [
-    "Try describing a complete app functionality in your prompt",
-    "Specify UI components and design preferences",
-    "Include platform-specific features if needed",
-    "Mention state management approaches",
-    "Request specific navigation patterns"
+
+  const templates = [
+    { name: "Todo App", prompt: "Create a todo list app with React Native that allows adding, completing, and deleting tasks. Include categories and dark/light mode." },
+    { name: "Social Feed", prompt: "Design a social media feed app with posts, likes, comments, and a profile page. Use modern UI components and smooth animations." },
+    { name: "E-commerce", prompt: "Build an e-commerce mobile app with product listings, search, cart functionality, and checkout process. Include bottom tab navigation." }
   ];
+
+  const features = [
+    { name: "Code Generation", description: "Generate complete React Native projects from text descriptions" },
+    { name: "Live Preview", description: "See your app in action with instant web-based previews" },
+    { name: "Project Export", description: "Download complete project files ready for deployment" },
+    { name: "Component Library", description: "Access to pre-built UI components optimized for mobile" }
+  ];
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
+
+ 
 
   useEffect(() => {
     if (selectedFile && files[selectedFile]) {
       setEditorContent(files[selectedFile]);
     }
   }, [selectedFile, files]);
-
-  useEffect(() => {
-    // Auto-rotate tips every 5 seconds
-    const interval = setInterval(() => {
-      setCurrentTip((prev) => (prev + 1) % tips.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleDownloadZip = async () => {
     setIsLoading(true);
@@ -100,103 +87,110 @@ export default function Home() {
       zip.generateAsync({ type: "blob" }).then(blob => {
         saveAs(blob, "ReactNativeApp.zip");
         setIsLoading(false);
-        
-        // Show completion animation
         setShowCompletionAnimation(true);
         setTimeout(() => setShowCompletionAnimation(false), 3000);
       });
-    }, 800); // Slight delay for animation effect
+    }, 800);
   };
 
-  const handleSubmit = async () => {
-    if (!prompt) return;
-    setIsLoading(true);
-    
-    // Animation states
-    setActiveTab("editor");
-    
-    const request = await axios.post("/api/generateCode", { prompt });
+// In your main component, keep all the original state and file handling logic
+// Only modify the chat-related parts as shown below:
+
+// 1. State declarations - keep all your existing state, just add:
+const [messages, setMessages] = useState<{ role: "user" | "assistant", content: string }[]>([]);
+
+// 2. Modify handleSubmit to maintain both file generation AND chat history:
+const handleSubmit = async () => {
+  if (!prompt) return;
+  setIsLoading(true);
+  setActiveTab("editor");
+  
+  // Add user message to chat
+  const userMessage = { role: "user" as const, content: prompt };
+  setMessages(prev => [...prev, userMessage]);
+
+  try {
+    const request = await axios.post("/api/generateCode", { 
+      prompt,
+      incomingMessages: messages.filter(m => m.role === "user")
+    });
+
     if (request.status !== 200) {
-      setIsLoading(false);
-      setChatResponse("Error generating code. Please try again.");
-      return;
+      throw new Error("Error generating code");
     }
 
     setParseError("");
     const response = request.data.response;
     const text = request.data.text;
 
+    // Add AI response to chat
+    setMessages(prev => [...prev, { role: "assistant", content: text }]);
+
     try {
       var dependencies = {};
-
-      try {
-        const parsed = extractJsonFromResponse(text);
-        setAiOutput(parsed);
-        console.log("Parsed AI Output:", parsed);
-        const pkg = JSON.parse(parsed.files["package.json"]);
-        setDependencies(pkg.dependencies || {});
-        dependencies = pkg.dependencies || {};
-        console.log("Dependencies:", dependencies);
-        if (parsed && parsed.files) {
-          const decodedFiles: Record<string, string> = {};
-          for (const [file, content] of Object.entries(parsed.files)) {
-            if (typeof content === "string") {
-              decodedFiles[file] = content;
-            }
-          }
-
-          const snackFiles: Record<
-            string,
-            { type: "CODE" | "ASSET"; contents: string }
-          > = {};
-          for (const [filePath, content] of Object.entries(decodedFiles)) {
-            const isAsset =
-              filePath.startsWith("assets/") ||
-              filePath.match(/\.(png|jpg|jpeg|gif|svg)$/);
-            snackFiles[filePath] = {
-              type: isAsset ? "ASSET" : "CODE",
-              contents: content,
-            };
-          }
-
-          setSnackData(snackFiles);
-          setFiles(decodedFiles);
-          const firstFile = Object.keys(decodedFiles)[0];
-          setSelectedFile(firstFile);
-          setChatResponse("");
-          setIsCodeRequest(true);
-          setActiveTab("editor");
-          
-          // Show completion animation
-          setShowCompletionAnimation(true);
-          setTimeout(() => setShowCompletionAnimation(false), 3000);
-        } else {
-          throw new Error("Not a file-based response");
+      const parsed = extractJsonFromResponse(text);
+      setAiOutput(parsed);
+      
+      if (parsed && parsed.files) {
+        // Keep all your existing file handling logic...
+        // This part should remain exactly as you had it originally
+        if (parsed.files["package.json"]) {
+          const pkg = JSON.parse(parsed.files["package.json"]);
+          setDependencies(pkg.dependencies || {});
+          dependencies = pkg.dependencies || {};
         }
-      } catch (error) {
-        console.error("JSON parsing error:", error);
-        setParseError(
-          `Failed to parse AI response: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-        setIsCodeRequest(false);
-        setChatResponse(text);
-        setActiveTab("chat");
+        
+        const decodedFiles: Record<string, string> = {};
+        for (const [file, content] of Object.entries(parsed.files)) {
+          if (typeof content === "string") {
+            decodedFiles[file] = content;
+          }
+        }
+
+        const snackFiles: Record<string, { type: "CODE" | "ASSET"; contents: string }> = {};
+        for (const [filePath, content] of Object.entries(decodedFiles)) {
+          const isAsset = filePath.startsWith("assets/") || filePath.match(/\.(png|jpg|jpeg|gif|svg)$/);
+          snackFiles[filePath] = {
+            type: isAsset ? "ASSET" : "CODE",
+            contents: content,
+          };
+        }
+        setPrompt("")
+        setSnackData(snackFiles);
+        setFiles(decodedFiles);
+        const firstFile = Object.keys(decodedFiles)[0];
+        setSelectedFile(firstFile);
+        setChatResponse("");
+        setIsCodeRequest(true);
+        setActiveTab("editor");
+        setShowEditor(true);
+        setShowCompletionAnimation(true);
+        setTimeout(() => setShowCompletionAnimation(false), 3000);
+      } else {
+        throw new Error("Not a file-based response");
       }
     } catch (error) {
-      console.error("Error generating project:", error);
-      setChatResponse(
-        `Error communicating with AI: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      console.error("JSON parsing error:", error);
+      const errorMsg = `Failed to parse AI response: ${error instanceof Error ? error.message : "Unknown error"}`;
+      setParseError(errorMsg);
       setIsCodeRequest(false);
       setActiveTab("chat");
-    } finally {
-      setIsLoading(false);
+      setShowEditor(true);
     }
-  };
+  } catch (error) {
+    console.error("Error generating project:", error);
+    const errorMsg = `Error communicating with AI: ${error instanceof Error ? error.message : "Unknown error"}`;
+    setChatResponse(errorMsg);
+    setIsCodeRequest(false);
+    setActiveTab("chat");
+    setShowEditor(true);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// 3. Update the chat tab rendering while keeping all other tabs the same:
+
 
   const fileTree = buildTreeStructure(Object.keys(files));
 
@@ -208,607 +202,727 @@ export default function Home() {
     setSidebarCollapsed(!sidebarCollapsed);
   };
   
+  const toggleRightPanel = () => {
+    setRightPanelCollapsed(!rightPanelCollapsed);
+  };
+  
   const focusPromptInput = () => {
     if (promptInputRef.current) {
       promptInputRef.current.focus();
     }
   };
 
+  const useTemplate = (template) => {
+    setPrompt(template);
+    focusPromptInput();
+  };
+
   return (
-    <div className="min-h-screen font-sans bg-gradient-to-br from-gray-950 to-indigo-950 text-white flex flex-col">
+    <div className="flex flex-col min-h-screen font-sans bg-slate-950 text-slate-100">
       {/* Header */}
-      <header className="border-b border-indigo-900/60 bg-gradient-to-r from-gray-900 to-indigo-900/10 p-3 flex items-center justify-between backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <motion.div 
-            initial={{ rotate: -10 }}
-            animate={{ rotate: 0 }}
-            transition={{ duration: 0.6, type: "spring" }}
-            className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-lg shadow-lg"
-          >
-            <Code size={20} className="text-white" />
-          </motion.div>
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">ReactNative Forge</h1>
-            <p className="text-xs text-indigo-300 -mt-1">Build. Preview. Ship.</p>
+      <header className="border-b border-slate-800 bg-slate-900 sticky top-0 z-40">
+        <div className="container mx-auto flex items-center justify-between h-16 px-4">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-1.5 rounded-lg shadow-lg">
+                <Phone size={18} className="text-white" />
+              </div>
+              <span className="font-semibold text-lg text-white">
+                ReactNative Builder
+              </span>
+            </Link>
+            
+            <span className="hidden md:flex h-6 w-px bg-slate-700 mx-1"></span>
+            
+            <div className="hidden md:flex items-center gap-4">
+              <Link href="#features" className="text-sm text-slate-400 hover:text-white">Features</Link>
+              <Link href="#docs" className="text-sm text-slate-400 hover:text-white">Docs</Link>
+              <Link href="#examples" className="text-sm text-slate-400 hover:text-white">Examples</Link>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative flex items-center gap-2 bg-indigo-800/30 px-3 py-1.5 rounded-full border border-indigo-700/50 text-xs"
-          >
-            <Command size={14} className="text-indigo-400" />
-            <span className="text-indigo-200">Press</span>
-            <kbd className="bg-indigo-900/70 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-700">⌘ K</kbd>
-          </motion.div>
           
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  className="flex gap-1.5 items-center"
-                >
-                  <Badge
-                    variant="outline"
-                    className="bg-indigo-900/40 text-indigo-200 border-indigo-700/50 py-1.5"
-                  >
-                    <CloudLightning size={14} className="mr-1 text-indigo-400" />
-                    Powered by Gemini
-                  </Badge>
-                </motion.div>
-              </TooltipTrigger>
-              <TooltipContent className="bg-indigo-900 border-indigo-700">
-                <p>Using Gemini 2.0 Flash API</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 rounded-full hover:bg-indigo-800/30 transition-colors"
-          >
-            <Github size={18} className="text-indigo-300" />
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 rounded-full hover:bg-indigo-800/30 transition-colors"
-          >
-            <Settings size={18} className="text-indigo-300" />
-          </motion.button>
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="hidden sm:flex items-center bg-slate-800 rounded-md px-2 py-1 text-xs text-slate-300 border border-slate-700">
+                    <Command size={12} className="mr-1" />
+                    <span>K</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Command menu</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <Button variant="outline" size="sm" className="hidden sm:flex bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700">
+              <Github className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+            
+            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all">
+              Get Started
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <AnimatePresence initial={false}>
-          <motion.div 
-            initial={{ width: "320px" }}
-            animate={{ 
-              width: sidebarCollapsed ? "64px" : "320px",
-              opacity: sidebarCollapsed ? 0.7 : 1
-            }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="border-r border-indigo-900/60 bg-gradient-to-b from-gray-900 to-indigo-950/70 flex flex-col overflow-hidden"
-          >
-            <div className="flex items-center p-3 border-b border-indigo-900/30">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-md hover:bg-indigo-800/30 transition-colors mr-2"
-              >
-                {sidebarCollapsed ? <ChevronRight size={18} /> : <Menu size={18} />}
-              </motion.button>
-              
-              {!sidebarCollapsed && (
-                <motion.h2 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-md font-medium text-indigo-200"
-                >
-                  Project Workspace
-                </motion.h2>
-              )}
-            </div>
-            
-            {!sidebarCollapsed && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="p-4 flex flex-col gap-3"
-              >
-                <div className="relative">
-                  <div 
-                    className="absolute top-3 right-3 text-xs text-indigo-400 flex items-center cursor-pointer hover:text-indigo-300"
-                    onClick={() => setShowTips(!showTips)}
-                  >
-                    <Zap size={14} className="mr-1" />
-                    Tips
-                    <ChevronDown size={14} className="ml-1" />
+      <main className="flex-1 flex flex-col">
+        {!showEditor ? (
+          /* Initial Page */
+          <div className="flex-1 flex flex-col">
+            {/* Hero */}
+            <section className="relative py-12 md:py-20 border-b border-slate-800 bg-slate-900">
+              <div className="container mx-auto px-4 max-w-5xl">
+                <div className="flex flex-col items-center text-center mb-12">
+                  <Badge className="mb-4 bg-blue-900/30 text-blue-400 hover:bg-blue-900/30 border-blue-800">
+                    AI-Powered Development
+                  </Badge>
+                  
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
+                    Build React Native Apps <br />
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                      With Natural Language
+                    </span>
+                  </h1>
+                  
+                  <p className="text-lg text-slate-400 max-w-2xl mb-8">
+                    Describe your mobile app idea in plain English and our AI will generate
+                    production-ready React Native code in seconds.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <Button 
+                      size="lg" 
+                      onClick={focusPromptInput}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Start Building
+                    </Button>
+                    
+                    <Button size="lg" variant="outline" className="border-slate-700 text-slate-200 hover:bg-slate-800">
+                      <Play className="h-4 w-4 mr-2" />
+                      Watch Demo
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Prompt Input Area */}
+                <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-lg overflow-hidden">
+                  <div className="border-b border-slate-800 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Edit className="h-4 w-4 text-slate-400" />
+                        <h3 className="font-medium text-white">App Description</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">
+                          <Terminal size={12} className="mr-1" />
+                          AI Powered
+                        </Badge>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-white">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                   
-                  <h2 className="text-sm font-medium mb-2 text-indigo-300">AI Prompt</h2>
-                  
-                  <AnimatePresence>
-                    {showTips && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="mb-2 bg-indigo-900/30 border border-indigo-800/60 rounded-lg p-2 text-xs text-indigo-300"
-                      >
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-medium">Prompt Tips</span>
-                          <span className="text-indigo-400">{currentTip + 1}/{tips.length}</span>
-                        </div>
-                        <p>{tips[currentTip]}</p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
-                  <div className="bg-indigo-950/50 rounded-lg border border-indigo-900/60 p-0.5 transition-all focus-within:ring-1 focus-within:ring-indigo-600">
+                  <div className="p-4">
                     <Textarea
-                      placeholder="Describe a React Native app or component..."
+                      placeholder="Describe your app in detail (e.g., 'Create a fitness tracking app with workout routines, progress tracking, and user profiles...')"
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      className="min-h-32 resize-none text-indigo-100 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-indigo-500"
+                      className="min-h-32 focus-visible:ring-blue-500 text-slate-200 bg-slate-900 resize-none border-slate-700"
                       ref={promptInputRef}
                     />
                     
-                    <div className="flex items-center justify-between p-2 border-t border-indigo-900/30">
-                      <div className="text-xs text-indigo-500">
-                        <PlusCircle size={14} className="inline mr-1" />
-                        Describe your app
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between mt-4">
+                      <div className="text-xs text-slate-400 flex items-center">
+                        <Zap size={12} className="mr-1" />
+                        Be specific about UI, navigation, and functionality
                       </div>
                       
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleSubmit}
-                        disabled={isLoading || !prompt}
-                        className={`px-3 py-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-all
-                          ${isLoading || !prompt 
-                            ? 'bg-indigo-800/30 text-indigo-400 cursor-not-allowed' 
-                            : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:from-blue-500 hover:to-indigo-500'
-                          }`}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin" /> 
-                            <span>Generating</span>
-                          </>
-                        ) : (
-                          <>
-                            <Zap size={16} /> 
-                            <span>Generate</span>
-                          </>
-                        )}
-                      </motion.button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-sm border-slate-700 text-slate-200 hover:bg-slate-800"
+                          onClick={() => setPrompt("")}
+                          disabled={!prompt}
+                        >
+                          Clear
+                        </Button>
+                        
+                        <Button
+                          onClick={handleSubmit}
+                          disabled={isLoading || !prompt}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all relative"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 size={16} className="mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Code size={16} className="mr-2" />
+                              Generate App
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Template Suggestions */}
+                  <div className="bg-slate-900/50 border-t border-slate-800 px-4 py-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-white">Templates</h4>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-400 hover:text-blue-300">
+                        View All
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {templates.map((template, index) => (
+                        <div 
+                          key={index}
+                          onClick={() => useTemplate(template.prompt)}
+                          className="bg-slate-800 rounded-md border border-slate-700 p-3 cursor-pointer hover:border-blue-500 transition-colors"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-sm text-white">{template.name}</span>
+                            <Plus size={14} className="text-slate-400" />
+                          </div>
+                          <p className="text-xs text-slate-400 line-clamp-2">
+                            {template.prompt}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleDownloadZip}
-                    disabled={Object.keys(files).length === 0 || isLoading}
-                    className={`flex-1 py-2 rounded-md flex items-center justify-center gap-1.5 text-sm transition-all
-                      ${Object.keys(files).length === 0 || isLoading
-                        ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
-                        : 'bg-indigo-800/40 text-indigo-200 border border-indigo-700/50 hover:bg-indigo-800/60'
-                      }`}
-                  >
-                    <Download size={16} />
-                    <span>Download</span>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={Object.keys(files).length === 0}
-                    className={`flex-1 py-2 rounded-md flex items-center justify-center gap-1.5 text-sm transition-all
-                      ${Object.keys(files).length === 0 
-                        ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
-                        : 'bg-emerald-900/30 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50'
-                      }`}
-                  >
-                    <Share2 size={16} />
-                    <span>Share</span>
-                  </motion.button>
+                {/* Features Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
+                  {features.map((feature, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-start p-4 rounded-lg border border-slate-800 bg-slate-900"
+                    >
+                      <div className="bg-blue-900/30 p-2 rounded-md mr-4">
+                        {index === 0 && <Code size={20} className="text-blue-400" />}
+                        {index === 1 && <Eye size={20} className="text-blue-400" />}
+                        {index === 2 && <Download size={20} className="text-blue-400" />}
+                        {index === 3 && <Layout size={20} className="text-blue-400" />}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-white mb-1">{feature.name}</h3>
+                        <p className="text-sm text-slate-400">{feature.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                {isCodeRequest && Object.keys(files).length > 0 && (
-                  <div className="flex-1 overflow-hidden flex flex-col mt-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-indigo-300">
-                        Files
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-indigo-900/40 text-indigo-300 border-indigo-800/50 text-xs">
-                          {Object.keys(files).length} files
-                        </Badge>
-                        <Search size={14} className="text-indigo-400" />
+              </div>
+            </section>
+  
+            {/* Recent Projects */}
+            <section className="py-12 bg-slate-900/50 border-b border-slate-800">
+              <div className="container mx-auto px-4 max-w-5xl">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-white">Recent Projects</h2>
+                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-200 hover:bg-slate-800">
+                    View All Projects
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {recentProjects.map((project, index) => (
+                    <div 
+                      key={index}
+                      className="border border-slate-800 rounded-lg bg-slate-800 overflow-hidden group hover:shadow-md transition-shadow"
+                    >
+                      <div className="bg-gradient-to-r from-slate-700 to-slate-600 h-32 relative">
+                        <Phone size={24} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-slate-300" />
+                      </div>
+                      <div className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="font-medium text-white">{project.name}</h3>
+                          <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">{project.date}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center space-x-1 text-xs text-slate-400">
+                            <FileText size={12} />
+                            <span>12 files</span>
+                          </div>
+                          <Button variant="ghost" size="sm" className="h-7 p-0 px-2 text-blue-400 hover:text-blue-300 group-hover:opacity-100 opacity-0 transition-opacity">
+                            Open
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="border border-dashed border-slate-700 rounded-lg bg-slate-800/50 h-full flex flex-col items-center justify-center p-6 hover:border-blue-500 transition-colors cursor-pointer">
+                    <div className="bg-blue-900/30 p-3 rounded-full mb-3">
+                      <Plus size={24} className="text-blue-400" />
+                    </div>
+                    <span className="text-white font-medium">Create New Project</span>
+                    <p className="text-xs text-slate-400 text-center mt-1">
+                      Start with a template or blank project
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        ) : (
+          /* Editor Interface */
+          <div className="flex flex-1 h-[calc(100vh-4rem)] overflow-hidden">
+            {/* Left Sidebar */}
+            <AnimatePresence initial={false}>
+              <motion.div 
+                initial={{ width: "280px" }}
+                animate={{ width: sidebarCollapsed ? "48px" : "280px" }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="border-r border-slate-800 bg-slate-900 flex flex-col relative"
+              >
+                <div className="flex items-center p-3 h-12 border-b border-slate-800">
+                  {!sidebarCollapsed && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex-1 flex items-center"
+                    >
+                      <span className="font-medium text-sm text-white">Project Files</span>
+                    </motion.div>
+                  )}
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={toggleSidebar}
+                    className="h-8 w-8 p-0 text-slate-400 hover:text-white"
+                  >
+                    {sidebarCollapsed ? <PanelRight size={18} /> : <PanelLeft size={18} />}
+                  </Button>
+                </div>
+                
+                {!sidebarCollapsed && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex-1 overflow-hidden flex flex-col"
+                  >
+                    <div className="p-3 border-b border-slate-800">
+                      <div className="bg-slate-800 rounded-md flex items-center px-2">
+                        <Search size={14} className="text-slate-400" />
+                        <input 
+                          type="text" 
+                          placeholder="Search files..." 
+                          className="bg-transparent border-0 w-full p-2 text-sm focus:outline-none focus:ring-0 text-slate-200 placeholder:text-slate-400"
+                        />
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto mt-2 border border-indigo-900/50 rounded-lg py-1 px-0.5 bg-indigo-950/30">
-                      <FileTree
-                        tree={fileTree}
-                        onSelect={setSelectedFile}
-                        selected={selectedFile}
-                      />
+                    <div className="flex-1 overflow-y-auto p-2">
+                      {isCodeRequest && Object.keys(files).length > 0 ? (
+                        <div className="space-y-1">
+                          <FileTree
+                            tree={fileTree}
+                            onSelect={setSelectedFile}
+                            selected={selectedFile}
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                          <FileText size={24} className="text-slate-600 mb-2" />
+                          <p className="text-sm text-slate-400">
+                            No files generated yet
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
-                    {dependencies && Object.keys(dependencies).length > 0 && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-medium text-indigo-400">
-                            <Package size={12} className="inline mr-1" />
-                            Dependencies
-                          </h3>
-                          <Badge className="bg-indigo-900/40 text-indigo-300 border-indigo-800/50 text-xs">
-                            {Object.keys(dependencies).length}
-                          </Badge>
-                        </div>
-                        <div className="mt-1 text-xs text-indigo-300/70 max-h-32 overflow-y-auto">
+                    <div className="border-t border-slate-800 p-3 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-medium text-white">Dependencies</h3>
+                        <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">
+                          {Object.keys(dependencies).length}
+                        </Badge>
+                      </div>
+                      
+                      {Object.keys(dependencies).length > 0 ? (
+                        <div className="max-h-40 overflow-y-auto">
                           {Object.entries(dependencies).map(([name, version]) => (
-                            <div key={name} className="flex items-center justify-between py-1 border-b border-indigo-900/30">
-                              <span>{name}</span>
-                              <span className="text-indigo-400">{version}</span>
+                            <div 
+                              key={name}
+                              className="flex items-center justify-between py-1 text-xs border-b border-slate-800"
+                            >
+                              <span className="text-slate-300">{name}</span>
+                              <span className="text-slate-400">{version}</span>
                             </div>
                           ))}
                         </div>
+                      ) : (
+                        <p className="text-xs text-slate-400">No dependencies found</p>
+                      )}
+                      
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full bg-blue-500 border-slate-700 text-slate-200 hover:bg-slate-800"
+                          onClick={handleDownloadZip}
+                          disabled={Object.keys(files).length === 0}
+                        >
+                          <Download size={14} className="mr-2" />
+                          Export Project
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-indigo-950/30">
-          <AnimatePresence>
-            {parseError && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="bg-red-900/20 border border-red-700/50 text-red-300 p-3 m-3 rounded-md text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <X size={18} className="text-red-400" />
-                  <span>Error Parsing Response</span>
-                </div>
-                <p className="mt-1 text-red-300/80">{parseError}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="flex-1 flex flex-col"
-          >
-            <div className="bg-gradient-to-r from-gray-900 to-indigo-950/70 border-b border-indigo-900/60 px-4 py-1 flex items-center justify-between">
-              <TabsList className="bg-indigo-950/30 border border-indigo-900/50 p-0.5 rounded-md">
-                <TabsTrigger
-                  value="editor"
-                  className="rounded px-3 py-1.5 text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=inactive]:text-indigo-300 data-[state=inactive]:hover:bg-indigo-900/50"
-                  disabled={!isCodeRequest || !selectedFile}
-                >
-                  <FileText size={16} className="mr-2" /> Editor
-                </TabsTrigger>
-                <TabsTrigger
-                  value="preview"
-                  className="rounded px-3 py-1.5 text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=inactive]:text-indigo-300 data-[state=inactive]:hover:bg-indigo-900/50"
-                >
-                  <PlayCircle size={16} className="mr-2" /> Preview
-                </TabsTrigger>
-                <TabsTrigger
-                  value="chat"
-                  className="rounded px-3 py-1.5 text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=inactive]:text-indigo-300 data-[state=inactive]:hover:bg-indigo-900/50"
-                  disabled={isCodeRequest}
-                >
-                  <MessageSquare size={16} className="mr-2" /> AI Response
-                </TabsTrigger>
-              </TabsList>
-              
-              <div className="flex items-center gap-3">
-                {selectedFile && (
-                  <div className="text-xs text-indigo-300 bg-indigo-900/30 px-2 py-1 rounded-md border border-indigo-800/50">
-                    {selectedFile}
-                  </div>
-                )}
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={toggleFullscreen}
-                  className="p-1.5 rounded-md hover:bg-indigo-800/30 text-indigo-300 transition-colors"
-                >
-                  <Smartphone size={16} />
-                </motion.button>
-              </div>
-            </div>
-
-            <TabsContent
-              value="editor"
-              className="flex-1 p-0 flex flex-col overflow-hidden relative"
-            >
-              {selectedFile ? (
-                <CodeEditor
-                  language={detectLanguage(selectedFile)}
-                  value={files[selectedFile]}
-                  onChange={(value) => {
-                    if (value !== undefined) {
-                      setFiles((prev) => ({
-                        ...prev,
-                        [selectedFile]: value,
-                      }));
-                    }
-                  }}
-                  fileName={selectedFile}
-                />
-              ) : (
-                <div className="flex-1 flex items-center justify-center flex-col p-8 text-center">
-                  <motion.div
-                    initial={{ y: -10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="mb-4 p-4 rounded-full bg-indigo-900/30 border border-indigo-800/50"
-                  >
-                    <Code size={32} className="text-indigo-400" />
+                    </div>
                   </motion.div>
-                  <h3 className="text-xl font-medium text-indigo-200 mb-2">Ready to Build</h3>
-                  <p className="text-indigo-300 max-w-md mb-6">
-                    Enter a detailed prompt to generate your React Native app. Be specific about UI components, navigation, and functionality.
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={focusPromptInput}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-md text-white flex items-center gap-2 shadow-lg"
-                  >
-                    <ArrowRight size={18} />
-                    Get Started
-                  </motion.button>
-                </div>
-              )}
-              
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-950">
+              {/* Error Banner */}
               <AnimatePresence>
-                {showCompletionAnimation && (
+                {parseError && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-indigo-900/80 backdrop-blur-md border border-indigo-700 rounded-xl p-4 shadow-xl flex items-center gap-3"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-red-900/20 border-b border-red-800/30 text-red-300 p-3 text-sm flex items-start gap-3"
                   >
-                    <div className="bg-green-500 p-2 rounded-full">
-                      <Check size={24} className="text-white" />
+                    <div className="flex-shrink-0 bg-red-800/30 p-1 rounded-full">
+                      <Code size={14} className="text-red-400" />
                     </div>
                     <div>
-                      <h3 className="text-white font-medium">Success!</h3>
-                      <p className="text-indigo-200 text-sm">Your code has been generated.</p>
+                      <div className="font-medium">Error Parsing Code</div>
+                      <p className="mt-1 text-red-300/80 text-xs">{parseError}</p>
                     </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-auto p-1 h-6 w-6 text-red-300"
+                      onClick={() => setParseError("")}
+                    >
+                      <Code size={12} />
+                    </Button>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </TabsContent>
 
-            <TabsContent
-              value="preview"
-              className="flex-1 p-4 overflow-auto"
-            >
-              <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-md font-semibold text-indigo-200 flex items-center gap-2">
-                    <Eye size={18} className="text-indigo-400" />
-                    Live Preview
-                  </h2>
-                  
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-blue-900/20 text-blue-300 border-blue-800/40">
-                      Web Preview
-                    </Badge>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="p-1.5 rounded-md bg-indigo-900/30 text-indigo-300 border border-indigo-800/40 hover:bg-indigo-800/40"
-                    >
-                      <MoreVertical size={16} />
-                    </motion.button>
-                  </div>
-                </div>
-                
-                <div className="flex-1 rounded-xl overflow-hidden border border-indigo-900/60 shadow-xl bg-gray-950">
-                  <div className="bg-gradient-to-r from-gray-800 to-indigo-900/50 border-b border-indigo-900/60 p-2 flex items-center justify-between">
+              {/* Editor Header */}
+              <div className="bg-slate-900 border-b border-slate-800 h-12 flex items-center px-3 justify-between">
+                <div className="flex items-center gap-2">
+                  {selectedFile ? (
                     <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      </div>
-                      <span className="text-xs text-indigo-300">React Native Web Preview</span>
+                      <Badge variant="outline" className="bg-slate-800 text-xs px-2 py-0 h-6 border-slate-700 text-slate-300">
+                        {selectedFile}
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="p-1 rounded-md hover:bg-indigo-900/40 text-indigo-400"
-                      >
-                        <ArrowRight size={14} />
-                      </motion.button>
-                    </div>
-                  </div>
-                  
-                  <SnackPreview
-                    aiOutput={snackData}
-                    dependencies={dependencies}
-                  />
+                  ) : (
+                    <span className="text-sm text-slate-400">
+                      No file selected
+                    </span>
+                  )}
                 </div>
                 
-                <div className="mt-3 text-xs text-indigo-400/70 flex items-center gap-1.5">
-                  <Smartphone size={14} className="text-indigo-400" />
-                  <span>Note: This is a web-based preview. Some React Native features may not render correctly.</span>
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-slate-400 hover:text-white"
+                          onClick={toggleFullscreen}
+                        >
+                          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="h-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                    onClick={handleDownloadZip}
+                    disabled={Object.keys(files).length === 0}
+                  >
+                    <Download size={14} className="mr-2" />
+                    Export
+                  </Button>
                 </div>
               </div>
-            </TabsContent>
+              
+              {/* Editor Content */}
+              <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <Tabs 
+                  value={activeTab} 
+                  onValueChange={setActiveTab}
+                  className="flex-1 flex flex-col h-full"
+                >
+                  <TabsList className="w-full rounded-none border-b border-slate-800 bg-slate-900">
+                    <TabsTrigger value="editor" className="flex items-center gap-2 text-slate-300 hover:text-white data-[state=active]:text-gray-500">
+                      <Code size={14} />
+                      <span>Editor</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="preview" className="flex items-center gap-2 text-slate-300 hover:text-white data-[state=active]:text-gray-500">
+                      <Eye size={14} />
+                      <span>Preview</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="chat" className="flex items-center gap-2 text-slate-300 hover:text-white data-[state=active]:text-gray-500">
+                      <MessageSquare size={14} />
+                      <span>Chat</span>
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <div className="flex-1 relative z-50">
+                    <TabsContent value="editor" className="h-full m-0 h-screen">
+                      {selectedFile ? (
+                        <div className="h-full">
+                        <CodeEditor
+                        language={detectLanguage(selectedFile)}
+                        value={files[selectedFile]}
+                        onChange={(value) => {
+                          if (value !== undefined) {
+                            setFiles((prev) => ({
+                              ...prev,
+                              [selectedFile]: value,
+                            }));
+                          }
+                        }}
+                        fileName={selectedFile}
+                      />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                          <Code size={24} className="text-slate-600 mb-2" />
+                          <p className="text-sm text-slate-400">
+                            Select a file to edit
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                    <div className="flex-1 relative z-50">
 
-            <TabsContent
-              value="chat"
-              className="flex-1 p-4 overflow-auto"
-            >
-              {chatResponse && (
-                <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-md font-semibold text-indigo-200 flex items-center gap-2">
-                      <MessageSquare size={18} className="text-indigo-400" />
-                      AI Response
-                    </h2>
-                    
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-indigo-900/30 text-indigo-300 border-indigo-800/40">
-                        <CloudLightning size={14} className="mr-1" />
-                        Gemini
-                      </Badge>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="p-1.5 rounded-md bg-indigo-900/30 text-indigo-300 border border-indigo-800/40 hover:bg-indigo-800/40"
-                      >
-                        <Save size={16} />
-                      </motion.button>
+                    <TabsContent value="preview" className="h-full m-0 bg-slate-900">
+                      {Object.keys(snackData).length > 0 ? (
+                        <SnackPreview aiOutput={snackData} dependencies={dependencies} />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                          <Eye size={24} className="text-slate-600 mb-2" />
+                          <p className="text-sm text-slate-400">
+                            Generate a project to see the preview
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                    </div>
+                    <div className="flex-1 relative z-50">
+
+                    <TabsContent value="chat" className="h-full m-0">
+  <div className="h-full flex flex-col bg-slate-900">
+  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+  {messages.length > 0 ? (
+    <>
+      {messages.map((msg, idx) => (
+        <div
+          key={idx}
+          className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+        >
+          {msg.role === "assistant" && (
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+              <Code className="h-4 w-4 text-white" />
+            </div>
+          )}
+          <div
+            className={`max-w-xl rounded-lg p-3 text-sm ${
+              msg.role === "user"
+                ? "bg-blue-600 text-white"
+                : "bg-slate-800 text-slate-200"
+            }`}
+          >
+            {msg.content}
+          </div>
+          {msg.role === "user" && (
+            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-slate-600 flex items-center justify-center">
+              <User className="h-4 w-4 text-white" />
+            </div>
+          )}
+        </div>
+      ))}
+      {isLoading && (
+        <div className="flex justify-start gap-3">
+          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+            <Code className="h-4 w-4 text-white" />
+          </div>
+          <div className="bg-slate-800 text-slate-200 rounded-lg p-3 max-w-xl text-sm">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Thinking...</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  ) : (
+    <div className="flex flex-col items-center justify-center h-full text-center p-4">
+      <MessageSquare size={24} className="text-slate-600 mb-2" />
+      <p className="text-sm text-slate-400">
+        {isCodeRequest 
+          ? "The AI response contains generated code files" 
+          : "Ask the AI to generate a project to see the response here"}
+      </p>
+    </div>
+  )}
+</div>
+    
+    <div className="border-t border-slate-800 p-4">
+      <div className="relative">
+        <Textarea
+          placeholder="Ask the AI about the project..."
+          className="pr-12 resize-none bg-slate-800 border-slate-700 text-slate-200"
+          rows={2}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSubmit()}
+        />
+        <Button
+          size="sm"
+          className="absolute right-2 bottom-2 h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700"
+          onClick={handleSubmit}
+          disabled={isLoading || !prompt.trim()}
+        >
+          <ArrowRight size={14} />
+        </Button>
+      </div>
+    </div>
+  </div>
+</TabsContent>
                     </div>
                   </div>
-                  
-                  <div className="flex-1 border border-indigo-900/60 rounded-xl overflow-hidden shadow-lg">
-                    <Editor
-                      height="100%"
-                      language="markdown"
-                      value={chatResponse}
-                      theme="vs-dark"
-                      options={{
-                        fontSize: 14,
-                        readOnly: true,
-                        minimap: { enabled: true },
-                        wordWrap: "on",
-                        padding: { top: 16, bottom: 16 },
-                        scrollBeyondLastLine: false,
-                      }}
-                    />
+                </Tabs>
+              </div>
+            </div>
+
+            {/* Right Sidebar */}
+            <AnimatePresence initial={false}>
+              {!rightPanelCollapsed && (
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: "300px" }}
+                  exit={{ width: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="border-l border-slate-800 bg-slate-900 flex flex-col"
+                >
+                  <div className="flex items-center p-3 h-12 border-b border-slate-800">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex-1 flex items-center"
+                    >
+                      <span className="font-medium text-sm text-white">AI Output</span>
+                    </motion.div>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={toggleRightPanel}
+                      className="h-8 w-8 p-0 text-slate-400 hover:text-white"
+                    >
+                      <PanelLeft size={18} />
+                    </Button>
                   </div>
-                </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 bg-slate-950">
+                    {aiOutput ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <pre className="whitespace-pre-wrap text-xs text-slate-300">{JSON.stringify(aiOutput, null, 2)}</pre>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                        <Code size={24} className="text-slate-600 mb-2" />
+                        <p className="text-sm text-slate-400">
+                          Generate a project to see the AI output
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
               )}
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
-      
+            </AnimatePresence>
+            
+            {/* Right Panel Toggle */}
+            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleRightPanel}
+                className="h-10 w-6 p-0 rounded-l-none border border-l-0 border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white"
+              >
+                {rightPanelCollapsed ? <PanelLeft size={16} /> : <PanelRight size={16} />}
+              </Button>
+            </div>
+          </div>
+        )}
+      </main>
+
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-gray-900 to-indigo-900/70 border-t border-indigo-900/60 p-2 px-4 flex items-center justify-between text-sm">
-        <div className="flex items-center gap-4">
-          <span className="text-indigo-400">ReactNative Forge</span>
-          <span className="text-indigo-600">•</span>
-          <span className="text-indigo-400/70">v1.0.0</span>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          {isLoading && (
-            <div className="flex items-center gap-2 text-indigo-300">
-              <Loader2 size={14} className="animate-spin" />
-              <span>Processing...</span>
-            </div>
-          )}
-          
-          {Object.keys(files).length > 0 && !isLoading && (
-            <div className="text-indigo-400/70 flex items-center gap-2">
-              <FileText size={14} className="text-indigo-400" />
-              <span>{Object.keys(files).length} files generated</span>
-            </div>
-          )}
-        </div>
-      </footer>
-      
-      {/* Command Palette */}
-      {isFullscreen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={toggleFullscreen}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-gray-900 border border-indigo-900/60 rounded-xl shadow-2xl w-full max-w-2xl p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <Search size={20} className="text-indigo-400" />
-              <input
-                type="text"
-                placeholder="Search commands, files, or ask for help..."
-                className="bg-transparent border-none outline-none text-white flex-1"
-                autoFocus
-              />
-              <kbd className="bg-gray-800 text-gray-400 px-2 py-1 rounded text-xs">ESC</kbd>
+      <footer className="border-t border-slate-800 bg-slate-900 py-6">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center gap-2 mb-4 md:mb-0">
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-1 rounded-md">
+                <Phone size={16} className="text-white" />
+              </div>
+              <span className="font-medium text-white">ReactNative Builder</span>
             </div>
             
-            <div className="border-t border-indigo-900/40 pt-3">
-              <div className="text-xs text-indigo-500 mb-2">Quick Actions</div>
-              
-              <div className="space-y-1">
-                <div className="flex items-center justify-between p-2 rounded hover:bg-indigo-900/40 cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <Zap size={16} className="text-indigo-400" />
-                    <span className="text-indigo-200">Generate New Project</span>
-                  </div>
-                  <kbd className="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded text-xs">G</kbd>
-                </div>
-                
-                <div className="flex items-center justify-between p-2 rounded hover:bg-indigo-900/40 cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <Eye size={16} className="text-indigo-400" />
-                    <span className="text-indigo-200">Toggle Preview</span>
-                  </div>
-                  <kbd className="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded text-xs">P</kbd>
-                </div>
-                
-                <div className="flex items-center justify-between p-2 rounded hover:bg-indigo-900/40 cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <Download size={16} className="text-indigo-400" />
-                    <span className="text-indigo-200">Download Project</span>
-                  </div>
-                  <kbd className="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded text-xs">D</kbd>
-                </div>
-                
-                <div className="flex items-center justify-between p-2 rounded hover:bg-indigo-900/40 cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <Settings size={16} className="text-indigo-400" />
-                    <span className="text-indigo-200">Open Settings</span>
-                  </div>
-                  <kbd className="bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded text-xs">S</kbd>
-                </div>
-              </div>
+            <div className="flex items-center gap-6">
+              <Link href="#" className="text-sm text-slate-400 hover:text-white">Docs</Link>
+              <Link href="#" className="text-sm text-slate-400 hover:text-white">API</Link>
+              <Link href="#" className="text-sm text-slate-400 hover:text-white">GitHub</Link>
+              <Link href="#" className="text-sm text-slate-400 hover:text-white">Twitter</Link>
             </div>
+          </div>
+          
+          <div className="mt-6 pt-6 border-t border-slate-800 text-center text-sm text-slate-400">
+            <p>© {new Date().getFullYear()} ReactNative Builder. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Completion Animation */}
+      <AnimatePresence>
+        {showCompletionAnimation && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.2 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-md shadow-lg flex items-center gap-2 z-50"
+          >
+            <Check size={18} />
+            <span>Project exported successfully!</span>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
